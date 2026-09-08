@@ -1,0 +1,1297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Atlas — Mobile Viewer</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0A0C10" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Atlas" />
+<link rel="icon" href="atlas-icon-192.png" />
+<link rel="apple-touch-icon" href="atlas-icon-192.png" />
+<style>
+/* ==========================================================================
+   ATLAS MOBILE VIEWER — design tokens
+   ink base, hairline structure, mono for data, sans for reading text.
+   ========================================================================== */
+
+:root {
+  --ink:        #0A0C10;
+  --panel:      #12151B;
+  --panel-2:    #171B22;
+  --border:     #232830;
+  --border-soft:#1A1E25;
+
+  --text:       #E7E4DD;
+  --text-muted: #868C96;
+  --text-faint: #565C66;
+
+  --accent:     #4C7C87;   /* structural signal teal */
+
+  --action:     #D97D2E;
+  --developing: #4C8F5B;
+  --armed:      #B8362E;
+  --watch:      #5B6069;
+
+  --long:       #4F8F68;
+  --short:      #C25C43;
+  --neutral:    #868C96;
+
+  --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", "Roboto Mono", monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+
+  --radius: 3px;
+  --gap-page: 18px;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] {
+  display: none !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100vh;
+  padding-bottom: 64px; /* leave room for sticky status bar */
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+::selection { background: var(--accent); color: var(--ink); }
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+
+.shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--ink);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 14px var(--gap-page) 12px;
+}
+
+.wordmark-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.wordmark {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.btn-ghost {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: var(--radius);
+}
+.btn-ghost:active { background: var(--panel-2); }
+
+.meta-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.meta-sep { color: var(--text-faint); }
+
+.freshness-dot {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 4px;
+  margin-left: 2px;
+}
+.freshness-dot .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+.freshness-dot.stale .dot { background: var(--developing); }
+
+.freshness-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.freshness-panel div { display: flex; justify-content: space-between; gap: 12px; }
+.freshness-panel span:last-child { color: var(--text); }
+
+/* ==========================================================================
+   IMPORT / EMPTY STATE
+   ========================================================================== */
+
+.import-state {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 20vh 24px 40px;
+  text-align: left;
+}
+
+.import-kicker {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+  margin: 0 0 10px;
+}
+
+.import-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--text);
+}
+
+.import-body {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 28px;
+  max-width: 40ch;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--text);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 13px 20px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn-primary:active { opacity: 0.85; }
+
+.btn-text {
+  display: block;
+  margin-top: 16px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+  padding: 4px 0;
+}
+
+.import-error {
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid var(--action);
+  border-radius: var(--radius);
+  background: rgba(194, 92, 67, 0.08);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* ==========================================================================
+   LAYER 1 — ORIENTATION
+   ========================================================================== */
+
+.orientation {
+  padding: 16px var(--gap-page) 30px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.board {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 30px;
+}
+
+.asset-row {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--watch);
+  border-radius: var(--radius);
+  padding: 12px 12px;
+  text-align: left;
+  width: 100%;
+}
+.asset-row:active { background: var(--panel-2); }
+
+.asset-row.state-ACTION { border-left-color: var(--action); }
+.asset-row.state-ARMED { border-left-color: var(--armed); }
+.asset-row.state-DEVELOPING { border-left-color: var(--developing); }
+.asset-row.state-WATCH { border-left-color: var(--watch); }
+
+.ar-rank {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.ar-main {
+  min-width: 0;
+}
+
+.ar-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.ar-asset {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+.ar-bias {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+.ar-bias.LONG { color: var(--long); }
+.ar-bias.SHORT { color: var(--short); }
+.ar-bias.NEUTRAL { color: var(--neutral); }
+
+.ar-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.ar-sub .sep { color: var(--text-faint); }
+
+.ar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.ar-score {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ar-state {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.ar-state.ACTION { color: var(--action); background: rgba(217,125,46,0.12); }
+.ar-state.ARMED { color: var(--armed); background: rgba(184,54,46,0.12); }
+.ar-state.DEVELOPING { color: var(--developing); background: rgba(76,143,91,0.12); }
+.ar-state.WATCH { color: var(--watch); background: rgba(91,96,105,0.14); }
+
+.board-empty {
+  padding: 30px 4px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Executive Market State */
+.exec-state {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 18px;
+}
+.exec-body {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ==========================================================================
+   STICKY STATUS / FILTER BAR
+   ========================================================================== */
+
+.status-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+}
+
+.status-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+}
+
+.status-chip.active {
+  background: var(--panel-2);
+}
+
+.chip-label {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.status-chip.active .chip-label { color: var(--text); }
+
+.chip-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-bottom: 1px;
+}
+.chip-dot.state-action { background: var(--action); }
+.chip-dot.state-armed { background: var(--armed); }
+.chip-dot.state-developing { background: var(--developing); }
+.chip-dot.state-watch { background: var(--watch); }
+
+/* ==========================================================================
+   LAYER 2 — ASSET DECISION SHEET
+   ========================================================================== */
+
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(5,6,8,0.6);
+  z-index: 40;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  max-height: 88vh;
+  background: var(--ink);
+  border-top: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.4);
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 10px auto 4px;
+}
+
+.sheet-scroll {
+  overflow-y: auto;
+  padding: 8px 20px 0;
+}
+
+.sheet-header {
+  display: grid;
+  grid-template-columns: 30px 1fr 30px;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0 16px;
+  border-bottom: 1px solid var(--border-soft);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--ink);
+}
+
+.sheet-rank {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-faint);
+  padding-top: 3px;
+}
+
+.sheet-asset-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.sheet-asset {
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sheet-bias {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+.sheet-state-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.sheet-state-row .chip-dot { width: 7px; height: 7px; }
+
+.sheet-score {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-close {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 4px;
+  text-align: right;
+}
+
+/* Atlas Line */
+.atlas-line {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.al-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.al-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  line-height: 1.3;
+}
+
+.al-value {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.al-auth .al-value { color: var(--accent); }
+
+/* Decision sections */
+.decision-block {
+  padding: 18px 0 6px;
+  display: grid;
+  gap: 20px;
+}
+
+.decision-section h3 {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  font-weight: 500;
+}
+
+.decision-section p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Reasoning trigger */
+.btn-reasoning {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 2px;
+  margin-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.chev { color: var(--text-muted); transition: transform 0.15s ease; }
+.btn-reasoning.open .chev,
+#reasoning-chev.open { transform: rotate(180deg); }
+
+/* Deep Atlas — log/readout styling, visually distinct from prose above */
+.deep-atlas {
+  display: grid;
+  gap: 1px;
+  background: var(--border-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.deep-section {
+  background: var(--panel);
+  padding: 12px 14px;
+}
+
+.deep-section h4 {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  margin: 0 0 6px;
+  font-weight: 500;
+}
+
+.deep-section p {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: pre-line;
+}
+
+.sheet-bottom-space {
+  height: 24px;
+}
+
+/* ==========================================================================
+   RESPONSIVE — desktop is functional, not the design priority
+   ========================================================================== */
+
+@media (min-width: 720px) {
+  .sheet {
+    left: 50%;
+    right: auto;
+    width: 640px;
+    transform: translateX(-50%);
+  }
+  .status-bar {
+    max-width: 640px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+  }
+}
+
+/* Accessibility */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="shell-header" id="shell-header">
+    <div class="wordmark-row">
+      <span class="wordmark">ATLAS</span>
+      <button class="btn-ghost" id="btn-reimport" hidden>Import</button>
+    </div>
+    <div class="meta-row" id="meta-row" hidden>
+      <span class="meta-item" id="meta-timestamp">—</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-item" id="meta-protocol">—</span>
+      <button class="freshness-dot" id="freshness-toggle" aria-label="Show data freshness detail" hidden>
+        <span class="dot"></span>
+      </button>
+    </div>
+    <div class="freshness-panel" id="freshness-panel" hidden></div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ EMPTY / IMPORT STATE ============ -->
+    <section class="import-state" id="import-state">
+      <p class="import-kicker">market-scan viewer</p>
+      <h1 class="import-title">No scan loaded</h1>
+      <p class="import-body">
+        Atlas does the reasoning elsewhere. Import a scan result to see
+        where attention belongs right now.
+      </p>
+      <label class="btn-primary" for="file-input">
+        Import Scan
+        <input type="file" id="file-input" accept="application/json,.json" hidden />
+      </label>
+      <button class="btn-text" id="btn-load-sample">Load example scan</button>
+      <p class="import-error" id="import-error" hidden></p>
+    </section>
+
+    <!-- ============ LAYER 1 — ORIENTATION ============ -->
+    <section class="orientation" id="orientation" hidden>
+
+      <!-- Ranked Asset Board -->
+      <div class="board" id="board" role="list"></div>
+
+      <!-- Executive Market State -->
+      <div class="exec-state" id="exec-state">
+        <h2 class="section-label">Executive Market State</h2>
+        <p class="exec-body" id="exec-body"></p>
+      </div>
+
+      <div class="board-empty" id="board-empty" hidden>
+        Nothing matches this filter right now.
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ STICKY STATUS / FILTER BAR ============ -->
+  <nav class="status-bar" id="status-bar" hidden aria-label="State filter">
+    <button class="status-chip" data-state="ALL">
+      <span class="chip-label">ALL</span>
+    </button>
+    <button class="status-chip" data-state="ACTION">
+      <span class="chip-dot state-action"></span>
+      <span class="chip-label">ACTION</span>
+      <span class="chip-count" id="count-action">0</span>
+    </button>
+    <button class="status-chip" data-state="ARMED">
+      <span class="chip-dot state-armed"></span>
+      <span class="chip-label">ARMED</span>
+      <span class="chip-count" id="count-armed">0</span>
+    </button>
+    <button class="status-chip" data-state="DEVELOPING">
+      <span class="chip-dot state-developing"></span>
+      <span class="chip-label">DEVELOPING</span>
+      <span class="chip-count" id="count-developing">0</span>
+    </button>
+    <button class="status-chip" data-state="WATCH">
+      <span class="chip-dot state-watch"></span>
+      <span class="chip-label">WATCH</span>
+      <span class="chip-count" id="count-watch">0</span>
+    </button>
+  </nav>
+
+  <!-- ============ LAYER 2 — ASSET DECISION VIEW (bottom sheet) ============ -->
+  <div class="sheet-scrim" id="sheet-scrim" hidden></div>
+  <div class="sheet" id="asset-sheet" hidden role="dialog" aria-modal="true">
+    <div class="sheet-handle" id="sheet-handle"></div>
+    <div class="sheet-scroll" id="sheet-scroll">
+
+      <div class="sheet-header">
+        <div class="sheet-rank" id="sheet-rank">—</div>
+        <div class="sheet-heading">
+          <div class="sheet-asset-row">
+            <span class="sheet-asset" id="sheet-asset">—</span>
+            <span class="sheet-bias" id="sheet-bias">—</span>
+          </div>
+          <div class="sheet-state-row">
+            <span class="chip-dot" id="sheet-state-dot"></span>
+            <span class="sheet-state" id="sheet-state">—</span>
+            <span class="sheet-score" id="sheet-score">—</span>
+          </div>
+        </div>
+        <button class="btn-close" id="btn-close-sheet" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Atlas Line -->
+      <div class="atlas-line" id="atlas-line">
+        <div class="al-stat">
+          <span class="al-label">Forecast Confidence</span>
+          <span class="al-value" id="al-confidence">—</span>
+        </div>
+        <div class="al-stat">
+          <span class="al-label">Trade Quality</span>
+          <span class="al-value" id="al-quality">—</span>
+        </div>
+        <div class="al-stat al-auth">
+          <span class="al-label">Authorization</span>
+          <span class="al-value" id="al-auth">—</span>
+        </div>
+      </div>
+
+      <!-- Required decision sections -->
+      <div class="decision-block" id="decision-block"></div>
+
+      <!-- Layer 3 trigger -->
+      <button class="btn-reasoning" id="btn-reasoning">
+        <span>View Atlas Reasoning</span>
+        <span class="chev" id="reasoning-chev">▾</span>
+      </button>
+
+      <!-- LAYER 3 — DEEP ATLAS (adaptive, omits empty sections) -->
+      <div class="deep-atlas" id="deep-atlas" hidden></div>
+
+      <div class="sheet-bottom-space"></div>
+    </div>
+  </div>
+
+  <script>
+/* Example Atlas scan — used by the "Load example scan" button.
+   Mirrors sample-scan.json; kept inline so it works over file:// with no server. */
+const SAMPLE_SCAN = {
+  "scan": {
+    "timestamp": "2026-09-08T13:45:00Z",
+    "protocol_version": "2.3",
+    "freshness": {
+      "ohlcv_through": "2026-09-08T13:40:00Z",
+      "macro_checked": "2026-09-08T12:00:00Z",
+      "calendar_through": "2026-09-12T00:00:00Z"
+    }
+  },
+  "executive_market_state": "USD strength is fading as real yields roll over into the CPI print; risk assets are grinding higher on low conviction while gold and yen both benefit from the same rate-differential story. Cross-asset confirmation is clean on the dollar leg but thinner on equities, which are running ahead of breadth.",
+  "assets": [
+    {
+      "rank": 1,
+      "asset": "USDJPY",
+      "score": 82,
+      "state": "ACTION",
+      "bias": "SHORT",
+      "trading_profile": "Swing",
+      "expression": "Partially expressed",
+      "atlas_line": { "forecast_confidence": 84, "trade_quality": 71, "authorization": "ACTION" },
+      "what_matters_now": "Rate-differential compression has room left to run into next week's CPI, and price has just confirmed a break of the prior swing structure on H4.",
+      "current_picture": "US2Y-JPY spread has narrowed for four straight sessions. H4 printed a clean break and retest of the 154.80 shelf with acceptance below. DXY confirming, not diverging.",
+      "what_we_are_waiting_for": "A shallow pullback into the broken shelf before adding, rather than chasing the current candle.",
+      "what_changes_the_view": "A reclaim and hold above 155.40 on H4 closes, or a hawkish surprise on Friday's CPI that reopens the spread.",
+      "deep": {
+        "causal_thesis": "US-Japan real rate differential is the primary transmission channel; BoJ policy drift is secondary but reinforcing.",
+        "market_state": "EXPRESSING — thesis is live and confirming on the tape, not just forming.",
+        "macro_rates": "US2Y down 9bp on the week; JGB 10Y drifting up 3bp. Differential compression is the whole trade.",
+        "cross_asset": "DXY, Gold, and USDJPY all telling the same story this week — no divergence flagged.",
+        "ohlcv_levels": "H4 structure break and retest at 154.80. Next downside magnet 153.90 (August low). Invalidation 155.40.",
+        "alternative_path": "If CPI surprises hot, expect a sharp reclaim back through 155.40 rather than a slow grind — this is a binary-catalyst week."
+      }
+    },
+    {
+      "rank": 2,
+      "asset": "XAUUSD",
+      "score": 74,
+      "state": "DEVELOPING",
+      "bias": "LONG",
+      "trading_profile": "Investor",
+      "expression": "Little expressed",
+      "atlas_line": { "forecast_confidence": 78, "trade_quality": 48, "authorization": "WAIT" },
+      "what_matters_now": "Real yields rolling over support the thesis, but gold hasn't moved yet — the setup is ahead of the tape, not confirmed by it.",
+      "current_picture": "10Y real yield down 6bp this week with no corresponding gold reaction. Positioning is not stretched either direction.",
+      "what_we_are_waiting_for": "Either a real-yield break below the range low, or gold itself confirming with a H4 structure shift — whichever comes first.",
+      "what_changes_the_view": "Real yields resuming their uptrend, which would remove the core catalyst.",
+      "deep": {
+        "causal_thesis": "Falling real yields lower the opportunity cost of holding gold; this is the dominant channel over the next two weeks.",
+        "positioning_options": "COT net-long is mid-range — no crowding in either direction, leaves room to run if confirmed.",
+        "contradictions": "Price has not yet responded to the real-yield move, which is the main reason this stays DEVELOPING rather than ACTION."
+      }
+    },
+    {
+      "rank": 3,
+      "asset": "NDX",
+      "score": 69,
+      "state": "ARMED",
+      "bias": "LONG",
+      "trading_profile": "Day-Scalp",
+      "expression": "Materially expressed",
+      "atlas_line": { "forecast_confidence": 61, "trade_quality": 44, "authorization": "WAIT" },
+      "what_matters_now": "Index is grinding to new highs but breadth is deteriorating underneath it — the move is getting less healthy the further it extends.",
+      "current_picture": "Advance-decline line diverging from price over the last five sessions. Mega-cap concentration doing most of the lifting.",
+      "what_we_are_waiting_for": "A breadth confirmation on any pullback, or a clean rejection that would flip this toward a fade rather than a continuation.",
+      "what_changes_the_view": "Breadth turning up alongside price would upgrade this toward ACTION; a rejection at highs on rising volume would flip the bias.",
+      "deep": {
+        "market_state": "EXPRESSED — much of the near-term move is already in price, which is why trade quality lags forecast confidence here."
+      }
+    },
+    {
+      "rank": 4,
+      "asset": "EURUSD",
+      "score": 51,
+      "state": "WATCH",
+      "bias": "NEUTRAL",
+      "trading_profile": "Swing",
+      "expression": "PARTIAL / NOT RELIABLY ASSESSABLE",
+      "atlas_line": { "forecast_confidence": 42, "trade_quality": 30, "authorization": "NO TRADE" },
+      "what_matters_now": "Caught between the same USD story helping USDJPY and a soft European growth print — no clean edge yet.",
+      "current_picture": "Range-bound for eight sessions between 1.0820 and 1.0910 with no structural break either direction.",
+      "what_we_are_waiting_for": "A decisive break of the range, or a clearer divergence between US and EU rate paths.",
+      "what_changes_the_view": "A break and acceptance outside the current range on H4.",
+      "deep": {}
+    },
+    {
+      "rank": 5,
+      "asset": "WTI",
+      "score": 47,
+      "state": "WATCH",
+      "bias": "SHORT",
+      "trading_profile": "Swing",
+      "expression": "Little expressed",
+      "atlas_line": { "forecast_confidence": 39, "trade_quality": 28, "authorization": "NO TRADE" },
+      "what_matters_now": "Supply overhang thesis is intact but has no near-term catalyst to force price action.",
+      "current_picture": "Inventories running above five-year average; OPEC+ commentary unchanged this week.",
+      "what_we_are_waiting_for": "Either a fresh inventory surprise or a breakdown below the current consolidation range.",
+      "what_changes_the_view": "A supply-side shock (geopolitical or OPEC+ policy shift) would invalidate the bearish thesis quickly.",
+      "deep": {
+        "acquisition_data_quality": "Weekly inventory data only — no live microstructure coverage on WTI in this build, so timing precision here is limited."
+      }
+    }
+  ]
+};
+
+  </script>
+  <script>
+/* ==========================================================================
+   ATLAS MOBILE VIEWER v0.1
+   Renders a pre-computed Atlas scan JSON. Does no scanning or reasoning
+   itself — Atlas does the complexity underneath, this gives orientation.
+   ========================================================================== */
+
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "atlas.viewer.lastScan";
+  const VALID_STATES = ["ACTION", "ARMED", "DEVELOPING", "WATCH"];
+  const VALID_BIAS = ["LONG", "SHORT", "NEUTRAL"];
+
+  const DEEP_FIELDS = [
+    ["causal_thesis", "Causal Thesis / Transmission Chain"],
+    ["context_state", "Context State"],
+    ["market_state", "Market State"],
+    ["path_state", "Path State"],
+    ["temporal_expression", "Temporal Expression"],
+    ["macro_rates", "Macro / Rates"],
+    ["cross_asset", "Cross-Asset"],
+    ["catalyst", "Catalyst"],
+    ["ohlcv_levels", "OHLCV / Levels"],
+    ["positioning_options", "Positioning / Options"],
+    ["microstructure", "Microstructure"],
+    ["asset_specific_driver", "Asset-Specific Driver"],
+    ["related_suppressed_expression", "Related / Suppressed Expression"],
+    ["alternative_path", "Alternative Path"],
+    ["contradictions", "Contradictions"],
+    ["acquisition_data_quality", "Acquisition / Data Quality"],
+    ["provenance", "Provenance"],
+  ];
+
+  const DECISION_FIELDS = [
+    ["what_matters_now", "What Matters Now"],
+    ["current_picture", "Current Picture"],
+    ["what_we_are_waiting_for", "What We're Waiting For"],
+    ["what_changes_the_view", "What Changes the View"],
+  ];
+
+  // ---- state ----------------------------------------------------------
+  let scan = null;
+  let activeFilter = "ALL";
+
+  // ---- DOM refs ---------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const importState = $("import-state");
+  const orientation = $("orientation");
+  const statusBar = $("status-bar");
+  const metaRow = $("meta-row");
+  const board = $("board");
+  const boardEmpty = $("board-empty");
+  const execBody = $("exec-body");
+  const importError = $("import-error");
+  const fileInput = $("file-input");
+  const btnReimport = $("btn-reimport");
+  const btnLoadSample = $("btn-load-sample");
+  const freshnessToggle = $("freshness-toggle");
+  const freshnessPanel = $("freshness-panel");
+
+  // sheet refs
+  const sheetScrim = $("sheet-scrim");
+  const sheet = $("asset-sheet");
+  const sheetHandle = $("sheet-handle");
+  const btnCloseSheet = $("btn-close-sheet");
+  const btnReasoning = $("btn-reasoning");
+  const reasoningChev = $("reasoning-chev");
+  const deepAtlas = $("deep-atlas");
+  const decisionBlock = $("decision-block");
+
+  // ---- validation ---------------------------------------------------------
+
+  function validateScan(data) {
+    const errors = [];
+
+    if (!data || typeof data !== "object") {
+      return ["The file is not a JSON object."];
+    }
+    if (!data.scan || typeof data.scan !== "object") {
+      errors.push("Missing \"scan\" object (timestamp, protocol_version).");
+    } else {
+      if (!data.scan.timestamp) errors.push("Missing scan.timestamp.");
+      if (!data.scan.protocol_version) errors.push("Missing scan.protocol_version.");
+    }
+    if (typeof data.executive_market_state !== "string" || !data.executive_market_state.trim()) {
+      errors.push("Missing executive_market_state text.");
+    }
+    if (!Array.isArray(data.assets)) {
+      errors.push("Missing \"assets\" array.");
+      return errors;
+    }
+    if (data.assets.length === 0) {
+      errors.push("assets array is empty — zero ACTION assets is valid, but the board still needs asset entries (with state WATCH/etc) to render.");
+    }
+
+    data.assets.forEach((a, i) => {
+      const tag = `assets[${i}]${a && a.asset ? ` (${a.asset})` : ""}`;
+      if (!a || typeof a !== "object") { errors.push(`${tag}: not an object.`); return; }
+      if (a.rank === undefined || a.rank === null) errors.push(`${tag}: missing rank.`);
+      if (!a.asset) errors.push(`${tag}: missing asset name.`);
+      if (a.score === undefined || a.score === null) errors.push(`${tag}: missing score.`);
+      if (!VALID_STATES.includes(a.state)) errors.push(`${tag}: state must be one of ${VALID_STATES.join(", ")}.`);
+      if (!VALID_BIAS.includes(a.bias)) errors.push(`${tag}: bias must be one of ${VALID_BIAS.join(", ")}.`);
+      if (!a.trading_profile) errors.push(`${tag}: missing trading_profile.`);
+      if (!a.expression) errors.push(`${tag}: missing expression.`);
+      if (!a.atlas_line || typeof a.atlas_line !== "object") {
+        errors.push(`${tag}: missing atlas_line (forecast_confidence, trade_quality, authorization).`);
+      }
+      DECISION_FIELDS.forEach(([key, label]) => {
+        if (!a[key] || typeof a[key] !== "string" || !a[key].trim()) {
+          errors.push(`${tag}: missing "${label}".`);
+        }
+      });
+    });
+
+    return errors;
+  }
+
+  // ---- import ---------------------------------------------------------
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (e) {
+        showImportError(["The file is not valid JSON.", e.message]);
+        return;
+      }
+      const errors = validateScan(data);
+      if (errors.length) {
+        showImportError(errors);
+        return;
+      }
+      loadScan(data);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { /* non-fatal */ }
+    };
+    reader.onerror = () => showImportError(["Could not read the file."]);
+    reader.readAsText(file);
+  }
+
+  function showImportError(lines) {
+    importError.hidden = false;
+    importError.textContent = "Scan could not be loaded:\n" + lines.map((l) => "· " + l).join("\n");
+  }
+
+  function loadScan(data) {
+    scan = data;
+    activeFilter = "ALL";
+    importError.hidden = true;
+    importState.hidden = true;
+    orientation.hidden = false;
+    statusBar.hidden = false;
+    metaRow.hidden = false;
+    btnReimport.hidden = false;
+    renderHeader();
+    renderBoard();
+  }
+
+  // ---- header / freshness ---------------------------------------------------------
+
+  function renderHeader() {
+    $("meta-timestamp").textContent = formatTimestamp(scan.scan.timestamp);
+    $("meta-protocol").textContent = `Protocol ${scan.scan.protocol_version}`;
+
+    const freshness = scan.scan.freshness;
+    if (freshness && typeof freshness === "object" && Object.keys(freshness).length) {
+      freshnessToggle.hidden = false;
+      freshnessPanel.innerHTML = "";
+      Object.entries(freshness).forEach(([k, v]) => {
+        const row = document.createElement("div");
+        const label = document.createElement("span");
+        label.textContent = humanizeKey(k);
+        const value = document.createElement("span");
+        value.textContent = v;
+        row.append(label, value);
+        freshnessPanel.appendChild(row);
+      });
+    } else {
+      freshnessToggle.hidden = true;
+      freshnessPanel.hidden = true;
+    }
+  }
+
+  function humanizeKey(k) {
+    return k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  function formatTimestamp(ts) {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return ts;
+    return d.toLocaleString(undefined, {
+      month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  }
+
+  freshnessToggle.addEventListener("click", () => {
+    freshnessPanel.hidden = !freshnessPanel.hidden;
+  });
+
+  // ---- board ---------------------------------------------------------
+
+  function renderBoard() {
+    const assets = [...scan.assets].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+    const filtered = activeFilter === "ALL" ? assets : assets.filter((a) => a.state === activeFilter);
+
+    board.innerHTML = "";
+    boardEmpty.hidden = filtered.length !== 0;
+
+    filtered.forEach((a) => {
+      const row = document.createElement("button");
+      row.className = `asset-row state-${a.state}`;
+      row.setAttribute("role", "listitem");
+      row.innerHTML = `
+        <div class="ar-rank">${a.rank}</div>
+        <div class="ar-main">
+          <div class="ar-top">
+            <span class="ar-asset">${escapeHtml(a.asset)}</span>
+            <span class="ar-bias ${a.bias}">${a.bias}</span>
+          </div>
+          <div class="ar-sub">
+            <span>${escapeHtml(a.trading_profile)}</span>
+            <span class="sep">·</span>
+            <span>${escapeHtml(a.expression)}</span>
+          </div>
+        </div>
+        <div class="ar-right">
+          <span class="ar-score">${a.score}</span>
+          <span class="ar-state ${a.state}">${a.state}</span>
+        </div>
+      `;
+      row.addEventListener("click", () => openSheet(a));
+      board.appendChild(row);
+    });
+
+    execBody.textContent = scan.executive_market_state;
+
+    // status bar counts
+    const counts = { ACTION: 0, ARMED: 0, DEVELOPING: 0, WATCH: 0 };
+    scan.assets.forEach((a) => { if (counts[a.state] !== undefined) counts[a.state]++; });
+    $("count-action").textContent = counts.ACTION;
+    $("count-armed").textContent = counts.ARMED;
+    $("count-developing").textContent = counts.DEVELOPING;
+    $("count-watch").textContent = counts.WATCH;
+
+    document.querySelectorAll(".status-chip").forEach((chip) => {
+      chip.classList.toggle("active", chip.dataset.state === activeFilter);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[c]);
+  }
+
+  statusBar.addEventListener("click", (e) => {
+    const chip = e.target.closest(".status-chip");
+    if (!chip) return;
+    activeFilter = chip.dataset.state;
+    renderBoard();
+    orientation.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  // ---- asset sheet (Layer 2 + Layer 3) ---------------------------------------------------------
+
+  function openSheet(asset) {
+    $("sheet-rank").textContent = `#${asset.rank}`;
+    $("sheet-asset").textContent = asset.asset;
+    const biasEl = $("sheet-bias");
+    biasEl.textContent = asset.bias;
+    biasEl.className = `sheet-bias ar-bias ${asset.bias}`;
+
+    $("sheet-state").textContent = asset.state;
+    $("sheet-state-dot").className = `chip-dot state-${asset.state.toLowerCase()}`;
+    $("sheet-score").textContent = `Score ${asset.score}`;
+
+    const line = asset.atlas_line || {};
+    $("al-confidence").textContent = fmtPercent(line.forecast_confidence);
+    $("al-quality").textContent = fmtPercent(line.trade_quality);
+    $("al-auth").textContent = line.authorization || "—";
+
+    decisionBlock.innerHTML = "";
+    DECISION_FIELDS.forEach(([key, label]) => {
+      if (!asset[key]) return;
+      const sec = document.createElement("div");
+      sec.className = "decision-section";
+      sec.innerHTML = `<h3>${label}</h3><p>${escapeHtml(asset[key])}</p>`;
+      decisionBlock.appendChild(sec);
+    });
+
+    // Layer 3 — build adaptively, omit anything absent (relevance compression)
+    deepAtlas.innerHTML = "";
+    const deep = asset.deep || {};
+    let deepCount = 0;
+    DEEP_FIELDS.forEach(([key, label]) => {
+      const val = deep[key];
+      if (!val || (typeof val === "string" && !val.trim())) return;
+      deepCount++;
+      const sec = document.createElement("div");
+      sec.className = "deep-section";
+      sec.innerHTML = `<h4>${label}</h4><p>${escapeHtml(val)}</p>`;
+      deepAtlas.appendChild(sec);
+    });
+    deepAtlas.hidden = true;
+    reasoningChev.classList.remove("open");
+    btnReasoning.hidden = deepCount === 0;
+
+    sheetScrim.hidden = false;
+    sheet.hidden = false;
+    $("sheet-scroll").scrollTop = 0;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeSheet() {
+    sheetScrim.hidden = true;
+    sheet.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  function fmtPercent(v) {
+    if (v === undefined || v === null || v === "") return "—";
+    return typeof v === "number" ? `${v}%` : v;
+  }
+
+  sheetScrim.addEventListener("click", closeSheet);
+  btnCloseSheet.addEventListener("click", closeSheet);
+  sheetHandle.addEventListener("click", closeSheet);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !sheet.hidden) closeSheet();
+  });
+
+  btnReasoning.addEventListener("click", () => {
+    const willOpen = deepAtlas.hidden;
+    deepAtlas.hidden = !willOpen;
+    reasoningChev.classList.toggle("open", willOpen);
+  });
+
+  // ---- import wiring ---------------------------------------------------------
+
+  fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+  btnReimport.addEventListener("click", () => fileInput.click());
+
+  btnLoadSample.addEventListener("click", () => {
+    if (typeof SAMPLE_SCAN !== "undefined") {
+      loadScan(SAMPLE_SCAN);
+    }
+  });
+
+  // ---- restore last scan on load ---------------------------------------------------------
+
+  (function restore() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (validateScan(data).length === 0) loadScan(data);
+    } catch (e) { /* ignore, start empty */ }
+  })();
+
+})();
+
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(() => {
+          /* offline shell just won't be available this run; app still works online */
+        });
+      });
+    }
+  </script>
+</body>
+</html>
