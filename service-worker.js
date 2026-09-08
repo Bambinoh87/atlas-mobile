@@ -4,7 +4,7 @@
    the network — it's read locally via the file picker / FileReader in
    app code — so this worker never sees or caches scan data. */
 
-const CACHE_NAME = "atlas-shell-v1";
+const CACHE_NAME = "atlas-shell-v2";
 
 const APP_SHELL = [
   "./",
